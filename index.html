@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<title>Chilean Arena</title>
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+body {
+	color: white;
+	background-color: black;
+	overflow: hidden;
+	touch-action: none;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+#status, #status-splash, #status-progress {
+	position: absolute;
+	left: 0;
+	right: 0;
+}
+
+#status, #status-splash {
+	top: 0;
+	bottom: 0;
+}
+
+#status {
+	background-color: #0b1636;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	visibility: hidden;
+}
+
+#status-splash {
+	max-height: 100%;
+	max-width: 100%;
+	margin: auto;
+}
+
+#status-splash.show-image--false {
+	display: none;
+}
+
+#status-splash.fullsize--true {
+	height: 100%;
+	width: 100%;
+	object-fit: contain;
+}
+
+#status-splash.use-filter--false {
+	image-rendering: pixelated;
+}
+
+#status-progress, #status-notice {
+	display: none;
+}
+
+#status-progress {
+	bottom: 10%;
+	width: 50%;
+	margin: 0 auto;
+}
+
+#status-notice {
+	background-color: #5b3943;
+	border-radius: 0.5rem;
+	border: 1px solid #9b3943;
+	color: #e0e0e0;
+	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
+	line-height: 1.3;
+	margin: 0 2rem;
+	overflow: hidden;
+	padding: 1rem;
+	text-align: center;
+	z-index: 1;
+}
+		</style>
+		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+<script>(function(){var Real=window.AudioContext||window.webkitAudioContext;if(!Real)return;var made=window.__caAudio=[];function Watched(options){var ctx=options===undefined?new Real():new Real(options);made.push(ctx);return ctx;}Watched.prototype=Real.prototype;window.AudioContext=Watched;if(window.webkitAudioContext)window.webkitAudioContext=Watched;function sync(){made.forEach(function(ctx){try{if(document.hidden){if(ctx.state==='running'){ctx.__caPaused=true;ctx.suspend();}}else if(ctx.__caPaused&&!window.__caMudo){ctx.__caPaused=false;ctx.resume();}}catch(e){}});}document.addEventListener('visibilitychange',sync);window.addEventListener('pagehide',sync);window.addEventListener('pageshow',sync);})();</script><meta property="og:title" content="Chilean Arena"><meta property="og:description" content="Combate arcade de mascotas chilenas. Gratis, en el navegador."><meta property="og:image" content="https://chileanarena.cl/vista.jpg"><meta property="og:url" content="https://chileanarena.cl/"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="description" content="Chilean Arena: combate arcade de mascotas chilenas, gratis en el navegador. Juego de fans hecho en Chile, no afiliado ni respaldado por ningún club ni por la ANFP. Las mascotas son caricaturas originales.">
+<style>
+#ca-pc,#ca-rot{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(8,14,36,.94);color:#f8faff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-align:center;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#ca-pc{z-index:60;cursor:pointer;background:#080e24}#ca-rot{z-index:55}
+#ca-pc.on{display:flex}
+#ca-pc .t{font-size:30px;font-weight:900;letter-spacing:1px}#ca-pc .t span{color:#f5c542}
+#ca-pc .b{background:#f5c542;color:#101a33;font-weight:900;font-size:22px;padding:16px 38px;border-radius:12px;transform:skewX(-8deg);box-shadow:0 6px 0 #b8860b;animation:ca-late 1.2s ease-in-out infinite}
+#ca-pc small,#ca-rot small{color:#a5b7d4;font-size:14px;max-width:80vw}
+.ca-tel{width:36px;height:60px;border:4px solid #f8faff;border-radius:9px;animation:ca-gira 2.2s ease-in-out infinite}
+@keyframes ca-gira{0%,25%{transform:rotate(0)}55%,100%{transform:rotate(90deg)}}
+@keyframes ca-late{0%,100%{transform:skewX(-8deg) scale(1)}50%{transform:skewX(-8deg) scale(1.06)}}
+#ca-pc .g{display:none}
+@media (orientation:portrait){#ca-pc .g{display:block}#ca-pc .l{display:none}#ca-rot.on{display:flex}}
+#ca-rot .ca-sk{margin-top:6px;min-height:48px;padding:10px 26px;border:2px solid #a5b7d4;border-radius:12px;background:transparent;color:#f8faff;font:800 17px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+#ca-fs{position:fixed;left:8px;top:42%;z-index:58;display:none;width:42px;height:42px;align-items:center;justify-content:center;background:rgba(16,26,51,.7);border:2px solid rgba(245,197,66,.8);border-radius:10px;opacity:.85}
+#ca-fs.on{display:flex}
+</style>
+<script>
+(function () {
+	// La página de Godot dice estar en inglés y Chrome la traducía al español a su manera (el aviso
+	// decía «modo de prueba de fallos»). El juego está en español.
+	document.documentElement.lang = 'es';
+	var touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+	var can = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+	// Datos permanentes (propietario, 2 nov 2026): que el navegador no borre la liga ni el nombre
+	// por falta de espacio. Chrome lo concede sin preguntar; Firefox pregunta, así que ahí solo se
+	// pide dentro del toque de «TOCA PARA JUGAR». No evita que la persona borre los datos.
+	function keep() {
+		try {
+			if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(function (done) { if (!done) navigator.storage.persist(); });
+		} catch (e) {}
+	}
+	if (!/Firefox/.test(navigator.userAgent)) keep();
+	if (!touch) return;
+	window.__caPantalla = true;
+	document.addEventListener('DOMContentLoaded', function () {
+		var rot = document.createElement('div');
+		rot.id = 'ca-rot';
+		// iPhone (propietario, 3 nov 2026: «le dice que gire el teléfono pero no entra al juego»).
+		// Con el candado de rotación puesto, o dentro del navegador de Instagram o WhatsApp, la
+		// pantalla nunca gira y este aviso tapaba el juego para siempre. Ahora explica cómo
+		// destrabarlo y deja seguir igual.
+		var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+		var inApp = /Instagram|FBAN|FBAV|WhatsApp|Line[/]/.test(navigator.userAgent);
+		var help = inApp ? '¿Lo abriste desde Instagram o WhatsApp? Ábrelo en ' + (ios ? 'Safari' : 'Chrome') + ': menú ··· y «Abrir en el navegador»'
+			: ios ? '¿No gira? Desliza hacia abajo desde la esquina superior derecha y apaga el candado de rotación'
+			: '¿No gira? Activa la rotación automática en los ajustes rápidos';
+		rot.innerHTML = '<div class=ca-tel></div><div style=font-size:26px;font-weight:900>Gira el teléfono</div><small>Chilean Arena se juega con el teléfono acostado</small><small>' + help + '</small><button type=button class=ca-sk>Seguir sin girar</button>';
+		rot.className = 'on';
+		rot.querySelector('.ca-sk').addEventListener('click', function () { rot.className = ''; });
+		document.body.appendChild(rot);
+		if (!can) return;
+		var cover = document.createElement('div');
+		cover.id = 'ca-pc';
+		cover.innerHTML = '<div class="ca-tel g"></div><img src=index.apple-touch-icon.png width=150 height=150 alt="Chilean Arena"><div class=b>TOCA PARA JUGAR</div><small class=g>Gira el teléfono: se juega acostado y en pantalla completa</small><small class=l>Se abre en pantalla completa</small><small>Un juego creado por <b style=color:#f5c542>Matichoc</b> · Síguenos en Instagram @matichoc.pasion.por.el.cacao</small>';
+		var again = document.createElement('div');
+		again.id = 'ca-fs';
+		again.title = 'Volver a pantalla completa';
+		again.setAttribute('aria-label', 'Volver a pantalla completa');
+		again.innerHTML = '<svg width=24 height=24 viewBox="0 0 24 24" fill=none stroke=#f5c542 stroke-width=3 stroke-linecap=round><path d="M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6"/></svg>';
+		document.body.appendChild(cover);
+		document.body.appendChild(again);
+		var asked = false;
+		function full() { return document.fullscreenElement || document.webkitFullscreenElement; }
+		function lock() {
+			try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function () {}); } catch (e) {}
+		}
+		function sync() {
+			cover.classList.toggle('on', !full() && !asked);
+			again.classList.toggle('on', !full() && asked);
+		}
+		function enter(event) {
+			if (event) event.preventDefault();
+			asked = true;
+			keep();
+			var page = document.documentElement;
+			var request = page.requestFullscreen || page.webkitRequestFullscreen;
+			try {
+				var done = request.call(page, { navigationUI: 'hide' });
+				if (done && done.then) done.then(lock).catch(sync); else lock();
+			} catch (e) {}
+			sync();
+		}
+		cover.addEventListener('click', enter);
+		again.addEventListener('click', enter);
+		document.addEventListener('fullscreenchange', sync);
+		document.addEventListener('webkitfullscreenchange', sync);
+		sync();
+	});
+})();
+</script>
+<script>
+// Avisos anónimos de error (propietario, 3 nov 2026: «levantar alertas por posibles cosas malas»).
+// Aparecen en GoatCounter como eventos «error/…», solo con el tipo de falla: nunca el texto del
+// error, el nombre del jugador ni nada que identifique a la persona. Funcionan aunque el juego no
+// alcance a arrancar, por eso viven en la página y no dentro de Godot. Solo en chileanarena.cl.
+(function () {
+	if (!/(^|[.])chileanarena[.]cl$/.test(location.hostname)) return;
+	var sent = {};
+	function report(kind) {
+		if (sent[kind]) return;
+		sent[kind] = true;
+		var path = 'error/' + kind, title = 'Error: ' + kind;
+		if (window.__caStats) { window.__caStats.send(path, title); return; }
+		// GoatCounter aún no está cargado: conteo directo con una imagen.
+		var img = new Image();
+		img.src = 'https://chileanarena.goatcounter.com/count?e=true&p=' + encodeURIComponent(path) + '&t=' + encodeURIComponent(title) + '&rnd=' + Math.random();
+	}
+	window.__caError = report;
+	// Sin WebGL 2 el 3D del juego no puede abrir.
+	try { if (!document.createElement('canvas').getContext('webgl2')) report('webgl'); } catch (e) { report('webgl'); }
+	window.addEventListener('error', function () { report('pagina'); });
+	window.addEventListener('unhandledrejection', function () { report('pagina'); });
+	document.addEventListener('DOMContentLoaded', function () {
+		// Godot muestra #status-notice cuando no puede iniciar: navegador sin funciones necesarias o
+		// descarga cortada.
+		var notice = document.getElementById('status-notice');
+		var missing = 0;
+		try { missing = window.Engine && Engine.getMissingFeatures ? Engine.getMissingFeatures({threads: false}).length : 0; } catch (e) {}
+		if (notice && window.MutationObserver) {
+			new MutationObserver(function () {
+				if (notice.style.display === 'block') report(missing ? 'navegador' : 'inicio');
+			}).observe(notice, {attributes: true, attributeFilter: ['style']});
+		}
+	});
+	// Si tras 2 minutos con la pantalla visible el juego no llegó al menú, se cuenta como carga lenta
+	// o trabada (las pestañas en segundo plano no cuentan: el navegador las frena).
+	var visible = 0, last = Date.now();
+	var timer = setInterval(function () {
+		var now = Date.now();
+		if (!document.hidden) visible += now - last;
+		last = now;
+		if (window.__caReady) clearInterval(timer);
+		else if (visible > 120000) { report('carga-lenta'); clearInterval(timer); }
+	}, 2000);
+})();
+</script>
+<style>
+#ca-gl{position:fixed;inset:0;z-index:70;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px;background:#080e24;color:#f8faff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-align:center;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#ca-gl.on{display:flex}
+#ca-gl .t{font-size:26px;font-weight:900}
+#ca-gl small{color:#a5b7d4;font-size:15px;max-width:80vw}
+#ca-gl small.d{font-size:12px;color:#7f93b4;margin-top:6px}
+#ca-gl small.d span{font-family:ui-monospace,monospace}
+#ca-gl button{margin-top:6px;background:#f5c542;color:#101a33;font:900 22px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px 38px;border:0;border-radius:12px;transform:skewX(-8deg);box-shadow:0 6px 0 #b8860b;cursor:pointer}
+</style>
+<script>
+// El 3D se cortó (amigo del propietario, 16 nov 2026: Chrome en Android mostró «WebGL context lost,
+// please reload the page»). Godot no puede recuperar el 3D y avisaba en inglés con una ventana del
+// navegador; ahora se explica en español y un toque recarga. El avance ya guardado sigue en el
+// equipo (Godot lo escribe al guardar); la pelea que estaba a medias no cuenta.
+//
+// Modo liviano (17 nov 2026): al mismo amigo, con un Honor Magic 8 Lite de 8 GB y pantalla de
+// 2640 × 1200, se le volvía a cortar al recargar, así que no era solo memoria del teléfono. Si el 3D
+// se corta con el juego a la vista, la próxima carga en este equipo es liviana: la página dibuja a
+// lo más 720 píxeles de alto (como un teléfono 720p; en el Honor eran 1188) y el juego parte en
+// AHORRO, sin suavizado. Queda guardado en el navegador (localStorage «ca-liviano»): «nuevo» la
+// primera vez (el juego pone AHORRO y lo recuerda) y «activo» después (la calidad la elige el
+// jugador en Ajustes; la imagen sigue limitada). Si se corta incluso así, el aviso lo dice y sugiere
+// otro navegador. El aviso muestra además una línea con la gráfica, el navegador y el tamaño de la
+// imagen para que el jugador se la mande al propietario: no se envía a ninguna parte.
+//
+// Modo a prueba de fallas (18 nov 2026): la foto del aviso mostró que la gráfica del amigo es una
+// PowerVR BXM-8-256 (chips MediaTek), con fallas conocidas de WebGL en Chrome, y el 3D se cortó
+// también en modo liviano. Si se corta incluso así, la próxima carga es «seguro»: además de lo
+// liviano, las mascotas usan el sombreado del 13 nov (ese teléfono jugaba bien hasta esa fecha;
+// ver GraphicsSettings.start_light_mode). La línea de datos dice
+// también en qué etapa se cortó (window.__caFase, la pone el juego) y cuántos shaders y
+// animaciones alcanzó a pedir la página.
+(function () {
+	var LIVIANO_ALTO = 720;
+	var mode = '';
+	try { mode = localStorage.getItem('ca-liviano') || ''; } catch (e) {}
+	window.__caLiviano = mode;
+	if (mode === 'nuevo') { try { localStorage.setItem('ca-liviano', 'activo'); } catch (e) {} }
+	if (mode) {
+		try {
+			var own = Object.getOwnPropertyDescriptor(window, 'devicePixelRatio');
+			var realRatio = own && own.get ? own.get : null;
+			if (realRatio) Object.defineProperty(window, 'devicePixelRatio', {configurable: true, get: function () {
+				var ratio = realRatio.call(window) || 1;
+				var side = Math.min(window.innerWidth, window.innerHeight) || 1;
+				return Math.min(ratio, Math.max(1, LIVIANO_ALTO / side));
+			}});
+		} catch (e) {}
+	}
+	var gpu = '';
+	try {
+		var probe = document.createElement('canvas').getContext('webgl2');
+		if (probe) {
+			var info = probe.getExtension('WEBGL_debug_renderer_info');
+			gpu = String(probe.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : probe.RENDERER) || '');
+			var lose = probe.getExtension('WEBGL_lose_context');
+			if (lose) lose.loseContext();
+		}
+	} catch (e) {}
+	// Cuántos shaders y animaciones de malla alcanzó a pedir el juego antes del corte.
+	var count = window.__caGL = {shaders: 0, tf: 0};
+	try {
+		var gl2 = window.WebGL2RenderingContext && WebGL2RenderingContext.prototype;
+		if (gl2) {
+			var link = gl2.linkProgram, begin = gl2.beginTransformFeedback;
+			gl2.linkProgram = function () { count.shaders++; return link.apply(this, arguments); };
+			gl2.beginTransformFeedback = function () { count.tf++; return begin.apply(this, arguments); };
+			// Gráfica real para Godot (18 nov 2026). Fuera del navegador, Godot apaga el «prepaso de
+			// profundidad» en gráficas de celular (PowerVR, Mali, Adreno, Apple): es otra tanda de
+			// shaders que esas gráficas no necesitan. En la web WebGL le dice «WebKit WebGL» y nunca lo
+			// apagaba. La foto del amigo mostró el corte justo al compilar los primeros shaders 3D, así
+			// que en un equipo donde el 3D ya se cortó se le da el nombre real de la gráfica.
+			if (mode && gpu) {
+				var param = gl2.getParameter;
+				gl2.getParameter = function (name) { return name === 0x1F01 ? gpu : param.apply(this, arguments); };
+			}
+		}
+	} catch (e) {}
+	var started = Date.now();
+	function stage() { return String(window.__caFase || 'pagina').slice(0, 40); }
+	function details() {
+		var ua = navigator.userAgent || '';
+		var browser = /(HonorBrowser|HuaweiBrowser|SamsungBrowser|EdgA|OPR|Firefox|Chrome|Version)[/]([0-9]+)/.exec(ua);
+		var canvas = document.getElementById('canvas');
+		return [
+			gpu.replace(/^ANGLE [(]/, '').replace(/[)]$/, '').slice(0, 60) || 'gráfica ?',
+			browser ? browser[1].replace('Version', 'Safari') + ' ' + browser[2] : 'navegador ?',
+			canvas ? canvas.width + '×' + canvas.height : '',
+			(window.__caReady ? 'jugando' : 'cargando') + ' ' + Math.round((Date.now() - started) / 1000) + ' s',
+			'etapa ' + stage(),
+			'shaders ' + count.shaders + ' · tf ' + count.tf,
+			mode === 'seguro' ? 'seguro' : (mode ? 'liviano' : 'normal')
+		].join(' · ');
+	}
+	var shown = false;
+	function show() {
+		if (shown) return;
+		shown = true;
+		// Sin 3D el juego sigue corriendo y sonando detrás (propietario, 16 nov 2026: su amigo quedó
+		// en «la pantalla azul con el audio, pero no se podía jugar»). Se calla hasta recargar.
+		window.__caMudo = true;
+		(window.__caAudio || []).forEach(function (ctx) { try { if (ctx.state === 'running') ctx.suspend(); } catch (e) {} });
+		var hidden = document.hidden;
+		var kind = hidden ? 'webgl-perdido-fondo' : (mode === 'seguro' ? 'webgl-perdido-seguro' : (mode ? 'webgl-perdido-liviano' : (window.__caReady ? 'webgl-perdido' : 'webgl-perdido-carga')));
+		if (window.__caError) {
+			window.__caError(kind);
+			// Etapa del corte, solo su nombre corto («mascotas», «cancha», «menu», «pelea»).
+			if (!hidden) window.__caError('webgl-etapa-' + stage().split(' ')[0]);
+		}
+		var text;
+		if (hidden) {
+			text = '<small>El teléfono necesitó memoria mientras el juego estaba en segundo plano y cerró el 3D. Lo que ya tenías guardado sigue ahí; solo la pelea que estabas jugando no cuenta.</small>';
+		} else if (!mode) {
+			try { localStorage.setItem('ca-liviano', 'nuevo'); } catch (e) {}
+			text = '<small>El navegador cerró el 3D del juego. Lo que ya tenías guardado sigue ahí; solo la pelea que estabas jugando no cuenta.</small><small>Al volver, el juego se abre en <b>modo liviano</b>: un poco menos nítido y más fácil para el teléfono.</small>';
+		} else if (mode !== 'seguro') {
+			try { localStorage.setItem('ca-liviano', 'seguro'); } catch (e) {}
+			text = '<small>El navegador cerró el 3D incluso en modo liviano.</small><small>Al volver, el juego se abre en <b>modo a prueba de fallas</b>: más simple para el teléfono.</small>';
+		} else {
+			text = '<small>El navegador cerró el 3D incluso en modo a prueba de fallas. Prueba abriendo chileanarena.cl en otro navegador (por ejemplo Firefox), actualizando el navegador o cerrando otras pestañas y aplicaciones.</small>';
+		}
+		var box = document.createElement('div');
+		box.id = 'ca-gl';
+		box.innerHTML = '<div class=t>Se cortó la imagen del juego</div>' + text + '<button type=button>VOLVER A JUGAR</button><small class=d>Si sigue pasando, mándale una foto de esta pantalla a quien te invitó a jugar:<br><span></span></small>';
+		box.querySelector('span').textContent = details();
+		box.querySelector('button').addEventListener('click', function () { location.reload(); });
+		(document.body || document.documentElement).appendChild(box);
+		box.className = 'on';
+	}
+	var real = window.alert;
+	window.alert = function (text) {
+		if (/WebGL context lost/i.test(String(text))) { show(); return; }
+		return real.apply(window, arguments);
+	};
+	window.addEventListener('webglcontextlost', function (event) { if (event.target && event.target.id === 'canvas') show(); }, true);
+})();
+</script>
+	</head>
+	<body>
+		<canvas id="canvas">
+			Your browser does not support the canvas tag.
+		</canvas>
+
+		<noscript>
+			Your browser does not support JavaScript.
+		</noscript>
+
+		<div id="status">
+			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
+			<progress id="status-progress"></progress>
+			<div id="status-notice"></div>
+		</div>
+
+		<script src="index.js"></script>
+		<script>
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":true,"fileSizes":{"index.pck":11659672,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_THREADS_ENABLED = false;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	const statusOverlay = document.getElementById('status');
+	const statusProgress = document.getElementById('status-progress');
+	const statusNotice = document.getElementById('status-notice');
+
+	let initializing = true;
+	let statusMode = '';
+
+	function setStatusMode(mode) {
+		if (statusMode === mode || !initializing) {
+			return;
+		}
+		if (mode === 'hidden') {
+			statusOverlay.remove();
+			initializing = false;
+			return;
+		}
+		statusOverlay.style.visibility = 'visible';
+		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
+		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
+		statusMode = mode;
+	}
+
+	function setStatusNotice(text) {
+		while (statusNotice.lastChild) {
+			statusNotice.removeChild(statusNotice.lastChild);
+		}
+		const lines = text.split('\n');
+		lines.forEach((line) => {
+			statusNotice.appendChild(document.createTextNode(line));
+			statusNotice.appendChild(document.createElement('br'));
+		});
+	}
+
+	function displayFailureNotice(err) {
+		console.error(err);
+		if (err instanceof Error) {
+			setStatusNotice(err.message);
+		} else if (typeof err === 'string') {
+			setStatusNotice(err);
+		} else {
+			setStatusNotice('An unknown error occurred.');
+		}
+		setStatusMode('notice');
+		initializing = false;
+	}
+
+	const missing = Engine.getMissingFeatures({
+		threads: GODOT_THREADS_ENABLED,
+	});
+
+	if (missing.length !== 0) {
+		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
+			let serviceWorkerRegistrationPromise;
+			try {
+				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
+			} catch (err) {
+				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
+			}
+			// There's a chance that installing the service worker would fix the issue
+			Promise.race([
+				serviceWorkerRegistrationPromise.then((registration) => {
+					if (registration != null) {
+						return Promise.reject(new Error('Service worker already exists.'));
+					}
+					return registration;
+				}).then(() => engine.installServiceWorker()),
+				// For some reason, `getRegistration()` can stall
+				new Promise((resolve) => {
+					setTimeout(() => resolve(), 2000);
+				}),
+			]).then(() => {
+				// Reload if there was no error.
+				window.location.reload();
+			}).catch((err) => {
+				console.error('Error while registering service worker:', err);
+			});
+		} else {
+			// Display the message as usual
+			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
+			displayFailureNotice(missingMsg + missing.join('\n'));
+		}
+	} else {
+		setStatusMode('progress');
+		engine.startGame({
+			'onProgress': function (current, total) {
+				if (current > 0 && total > 0) {
+					statusProgress.value = current;
+					statusProgress.max = total;
+				} else {
+					statusProgress.removeAttribute('value');
+					statusProgress.removeAttribute('max');
+				}
+			},
+		}).then(() => {
+			setStatusMode('hidden');
+		}, displayFailureNotice);
+	}
+}());
+		</script>
+	</body>
+</html>
+
